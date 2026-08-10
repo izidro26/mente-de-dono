@@ -44,6 +44,29 @@ python3 scripts/diagramar.py \
 Gera `saida/miolo.pdf` (impressão) e `saida/livro.epub` (ebook). Aceita
 `.md` ou `.docx` como manuscrito — detectado pela extensão do arquivo.
 
+### Interface web (sem linha de comando)
+
+Se preferir testar por um formulário no navegador em vez de linha de
+comando:
+
+```bash
+pip install -r interface/requirements.txt
+streamlit run interface/app.py
+```
+
+Abre automaticamente em `http://localhost:8501`. A página deixa você:
+
+1. Enviar o manuscrito (`.md` ou `.docx`) por upload
+2. Preencher título, autor, subtítulo, dedicatória etc.
+3. Escolher o tamanho do miolo num menu (com a descrição de uso de cada um)
+4. Marcar sangria / letra capitular
+5. Clicar em "Gerar miolo e EPUB" e baixar o PDF e o EPUB direto da página,
+   com uma prévia do PDF renderizada ali mesmo
+
+É o mesmo pipeline de `scripts/diagramar.py` por baixo — só troca a linha
+de comando por um formulário. Cada geração roda numa pasta temporária,
+então rodar de novo não acumula lixo no disco.
+
 ### `livro.yaml`
 
 ```yaml
@@ -163,6 +186,9 @@ diagramacao/
   scripts/
     margens.py               # cálculo de margens/gutter
     diagramar.py              # orquestrador (CLI)
+  interface/
+    app.py                    # formulário web (Streamlit) sobre o mesmo pipeline
+    requirements.txt
   exemplos/
     livro-exemplo/             # manuscrito de não-ficção de exemplo, pronto pra rodar
 ```

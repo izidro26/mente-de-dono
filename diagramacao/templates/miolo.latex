@@ -1,0 +1,180 @@
+\documentclass[$fonte_pt$pt,twoside,openright]{memoir}
+
+% ---------------------------------------------------------------------------
+% Fonte e idioma
+% ---------------------------------------------------------------------------
+\usepackage{fontspec}
+\setmainfont{$fonte_principal$}
+\setmonofont{Latin Modern Mono}
+
+\usepackage{polyglossia}
+\setdefaultlanguage[variant=brazilian]{portuguese}
+
+\usepackage{hyperref}
+\hypersetup{hidelinks, bookmarksnumbered=true, pdftitle={$titulo$}, pdfauthor={$autor$}}
+
+% ---------------------------------------------------------------------------
+% Cabeçalho / rodapé: título do livro na página par, título do capítulo na
+% página ímpar, número de página no rodapé externo.
+% ---------------------------------------------------------------------------
+\makepagestyle{miolo}
+\makeevenhead{miolo}{\small\scshape $titulo$}{}{}
+\makeoddhead{miolo}{}{}{\small\scshape \leftmark}
+\makeevenfoot{miolo}{\thepage}{}{}
+\makeoddfoot{miolo}{}{}{\thepage}
+\pagestyle{miolo}
+\aliaspagestyle{chapter}{empty}
+
+% ---------------------------------------------------------------------------
+% Estilo de capítulo — número pequeno em versalete + regra + título grande.
+% Definido manualmente (em vez de usar um chapterstyle pronto do memoir) para
+% não depender de nomes de estilo que podem mudar entre versões do memoir.
+% ---------------------------------------------------------------------------
+\makechapterstyle{miolocapitulo}{
+  \renewcommand{\chapternamenum}{\space}
+  \setlength{\beforechapskip}{2cm}
+  \setlength{\afterchapskip}{1.5cm}
+  \renewcommand{\printchaptername}{}
+  \renewcommand{\printchapternum}{%
+    \Large\scshape \chaptername\space\thechapter
+    \par\vspace{4pt}\hrule height 0.6pt\par\vspace{8pt}}
+  \renewcommand{\printchapternonum}{}
+  \renewcommand{\chaptitlefont}{\normalfont\Huge\bfseries}
+}
+\chapterstyle{miolocapitulo}
+
+% ---------------------------------------------------------------------------
+% Capitulares (letra capitular no início de cada capítulo) — aplicadas
+% automaticamente pelo filtro filters/capitulares.lua no primeiro parágrafo
+% após cada capítulo. Desativado para livros infantis (fonte maior, texto
+% corrido curto).
+% ---------------------------------------------------------------------------
+$if(usar_capitulares)$
+\usepackage{lettrine}
+\setcounter{DefaultLines}{2}
+\renewcommand{\DefaultLoversize}{0.1}
+\renewcommand{\DefaultLraise}{0.0}
+$endif$
+
+% ---------------------------------------------------------------------------
+% Tabelas, figuras e legendas — comuns em não-ficção (negócios, dados,
+% finanças) que costuma exigir mais diagramação que texto corrido puro.
+% ---------------------------------------------------------------------------
+\usepackage{calc}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage[font=small,labelfont=bf,skip=6pt]{caption}
+\setkeys{Gin}{width=0.9\linewidth,keepaspectratio}
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+% ---------------------------------------------------------------------------
+% Caixas de destaque para não-ficção: dica, atenção, nota, citação.
+% Convertidas automaticamente pelo filtro filters/caixas.lua a partir de
+% blocos Div do Markdown (::: dica ... :::).
+% ---------------------------------------------------------------------------
+% Nota: usamos o tcolorbox "básico" (sem a opção [most]) de propósito — a
+% opção [most] carrega bibliotecas extras (skins/breakable/listings) que,
+% neste ambiente com XeLaTeX + geometry + trim size customizado, faziam o
+% tamanho de página do PDF final voltar para "letter" silenciosamente.
+\usepackage{tcolorbox}
+
+\newtcolorbox{caixadica}{
+  colback=green!5!white, colframe=green!40!black,
+  boxrule=0.6pt, arc=2pt, left=8pt, right=8pt, top=6pt, bottom=6pt,
+  title={\textbf{Dica}}, fonttitle=\scshape\small, coltitle=green!25!black
+}
+\newtcolorbox{caixaatencao}{
+  colback=orange!5!white, colframe=orange!60!black,
+  boxrule=0.6pt, arc=2pt, left=8pt, right=8pt, top=6pt, bottom=6pt,
+  title={\textbf{Atenção}}, fonttitle=\scshape\small, coltitle=orange!30!black
+}
+\newtcolorbox{caixanota}{
+  colback=black!4!white, colframe=black!50!white,
+  boxrule=0.6pt, arc=2pt, left=8pt, right=8pt, top=6pt, bottom=6pt,
+  title={\textbf{Nota}}, fonttitle=\scshape\small, coltitle=black
+}
+\newtcolorbox{caixacitacao}{
+  colback=white, colframe=white, colbacktitle=white,
+  left=18pt, right=18pt, top=4pt, bottom=4pt,
+  fontupper=\itshape\large
+}
+
+% ---------------------------------------------------------------------------
+% Tamanho de página (trim size) e margens — calculados em scripts/margens.py
+% a partir do preset em trims.yaml e da contagem de páginas do livro.
+%
+% Usamos o pacote geometry em vez dos comandos nativos do memoir
+% (\settrimmedsize/\setlrmarginsandblock) porque, com XeLaTeX + xdvipdfmx,
+% esses comandos não recalculam corretamente o deslocamento de origem da
+% página para tamanhos de papel customizados — o conteúdo fica desalinhado
+% mesmo com o \paperwidth/\paperheight corretos. geometry lida com isso bem.
+%
+% geometry precisa ser o ÚLTIMO pacote carregado nesta lista (depois de
+% hyperref e tcolorbox/pgf): cada um registra um gancho \AtBeginDocument que
+% grava o tamanho final da página no PDF, e quem registra por último
+% "vence". Carregando geometry por último, seu gancho roda depois dos
+% outros e o trim size correto prevalece — na ordem inversa, o PDF final
+% volta silenciosamente para o tamanho carta.
+% ---------------------------------------------------------------------------
+\usepackage[
+  paperwidth=$largura_efetiva_cm$cm,
+  paperheight=$altura_efetiva_cm$cm,
+  inner=$lombada_cm$cm,
+  outer=$externa_cm$cm,
+  top=$topo_cm$cm,
+  bottom=$rodape_cm$cm
+]{geometry}
+
+\setsecnumdepth{subsection}
+\settocdepth{section}
+
+\begin{document}
+
+% ---------------------------------------------------------------------------
+% Pré-textuais
+% ---------------------------------------------------------------------------
+\frontmatter
+\pagestyle{empty}
+
+\newpage
+\thispagestyle{empty}
+\begin{center}
+\vspace*{4cm}
+{\Huge\bfseries $titulo$\par}
+$if(subtitulo)$
+\vspace{0.5cm}
+{\Large $subtitulo$\par}
+$endif$
+\vspace{2cm}
+{\Large $autor$\par}
+\end{center}
+
+\newpage
+\thispagestyle{empty}
+\vspace*{\fill}
+{\small
+$if(autor)$Copyright \textcopyright\ $ano$ $autor$\par\vspace{6pt}$endif$
+$if(editora)$$editora$\par\vspace{6pt}$endif$
+$if(isbn)$ISBN: $isbn$\par\vspace{6pt}$endif$
+Todos os direitos reservados. Nenhuma parte desta publicação pode ser
+reproduzida, distribuída ou transmitida de qualquer forma ou por qualquer
+meio, sem autorização prévia por escrito do autor.
+\par}
+
+$if(dedicatoria)$
+\newpage
+\thispagestyle{empty}
+\vspace*{6cm}
+\begin{center}\itshape $dedicatoria$\end{center}
+$endif$
+
+\tableofcontents*
+
+\mainmatter
+\pagestyle{miolo}
+
+$body$
+
+\end{document}

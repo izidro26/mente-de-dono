@@ -1,0 +1,72 @@
+# Presets de tamanho de miolo (trim size).
+# Todas as dimensões em centímetros (largura x altura, formato retrato já orientado).
+# familia_margem define qual fórmula de margem/gutter usar (ver scripts/margens.py):
+#   - kdp: segue a tabela oficial da Amazon KDP (gutter cresce com a contagem de páginas)
+#   - uiclap: segue a faixa recomendada pela UICLAP (externas 1.5-2cm, lombada 2-2.5cm)
+# sangria_padrao_cm: sangria a aplicar quando o livro tem imagem/cor sangrando até a borda.
+
+presets:
+  kdp_5.5x8.5:
+    nome: "KDP - Digest (5.5 x 8.5 pol)"
+    largura_cm: 13.97
+    altura_cm: 21.59
+    familia_margem: kdp
+    sangria_padrao_cm: 0.32
+    fonte_base_pt: 11
+    uso_recomendado: "Ficção padrão, romance, novela"
+
+  kdp_6x9:
+    nome: "KDP - Trade (6 x 9 pol)"
+    largura_cm: 15.24
+    altura_cm: 22.86
+    familia_margem: kdp
+    sangria_padrao_cm: 0.32
+    fonte_base_pt: 11
+    uso_recomendado: "Não-ficção, negócios, autoajuda — o mais usado no mercado americano"
+
+  uiclap_14x21:
+    nome: "UICLAP - 14 x 21 cm"
+    largura_cm: 14.0
+    altura_cm: 21.0
+    familia_margem: uiclap
+    sangria_padrao_cm: 0.32
+    fonte_base_pt: 11
+    uso_recomendado: "Equivalente nacional ao 5.5x8.5 pol, ficção e não-ficção"
+
+  uiclap_15.5x23:
+    nome: "UICLAP - 15,5 x 23 cm"
+    largura_cm: 15.5
+    altura_cm: 23.0
+    familia_margem: uiclap
+    sangria_padrao_cm: 0.32
+    fonte_base_pt: 11
+    uso_recomendado: "Formato mais comum na UICLAP, bom para não-ficção com tabelas"
+
+  uiclap_16x23:
+    nome: "UICLAP - 16 x 23 cm"
+    largura_cm: 16.0
+    altura_cm: 23.0
+    familia_margem: uiclap
+    sangria_padrao_cm: 0.32
+    fonte_base_pt: 11
+    uso_recomendado: "Não-ficção densa, mais espaço horizontal para tabelas/gráficos"
+
+  uiclap_20x20_infantil:
+    nome: "UICLAP - 20 x 20 cm (infantil)"
+    largura_cm: 20.0
+    altura_cm: 20.0
+    familia_margem: uiclap
+    sangria_padrao_cm: 0.32
+    fonte_base_pt: 14
+    estilo: infantil
+    uso_recomendado: "Livro infantil ilustrado, quadrado, fonte maior, sem capitulares"
+
+  pocket_11x18:
+    nome: "Pocket 11 x 18 cm (aproximado)"
+    largura_cm: 11.0
+    altura_cm: 18.0
+    familia_margem: uiclap
+    sangria_padrao_cm: 0.32
+    fonte_base_pt: 10
+    aproximado: true
+    uso_recomendado: "Edição de bolso — confirme a medida exata aceita pela gráfica/plataforma antes de fechar o arquivo final"

@@ -65,7 +65,14 @@ $endif$
 \usepackage{longtable}
 \usepackage{array}
 \usepackage{graphicx}
-\usepackage[font=small,labelfont=bf,skip=6pt]{caption}
+% Nota: NÃO carregamos o pacote "caption" de propósito — o memoir já tem seu
+% próprio sistema de legendas por baixo, e o pacote caption por cima corrompe
+% um contador nesse ambiente (erro "No counter 'none' defined" ao compilar
+% uma tabela). Usamos os comandos nativos do memoir para o mesmo efeito.
+\captionnamefont{\small\bfseries}
+\captiontitlefont{\small}
+\setlength{\abovecaptionskip}{6pt}
+\setlength{\belowcaptionskip}{6pt}
 \setkeys{Gin}{width=0.9\linewidth,keepaspectratio}
 \providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
 

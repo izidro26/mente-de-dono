@@ -65,10 +65,21 @@ $endif$
 \usepackage{longtable}
 \usepackage{array}
 \usepackage{graphicx}
+
 % Nota: NÃO carregamos o pacote "caption" de propósito — o memoir já tem seu
-% próprio sistema de legendas por baixo, e o pacote caption por cima corrompe
-% um contador nesse ambiente (erro "No counter 'none' defined" ao compilar
-% uma tabela). Usamos os comandos nativos do memoir para o mesmo efeito.
+% próprio sistema de legendas por baixo. Usamos os comandos nativos do
+% memoir para o mesmo efeito.
+%
+% \newcounter{none} abaixo é a correção para um bug conhecido do pandoc
+% (>= 3.8.1): para tabelas sem legenda, o pandoc gera `\def\LTcaptype{}`,
+% que só funciona com versões bem recentes do pacote longtable (>= 4.21).
+% Em instalações com uma versão um pouco mais antiga do longtable (comum
+% via MiKTeX/TeX Live), isso quebra com "No counter 'none' defined" ao
+% compilar qualquer tabela. Criar esse contador vazio deixa o mecanismo
+% de fallback do longtable funcionar independente da versão instalada.
+% Ver https://github.com/jgm/pandoc/issues/11201
+\newcounter{none}
+
 \captionnamefont{\small\bfseries}
 \captiontitlefont{\small}
 \setlength{\abovecaptionskip}{6pt}

@@ -87,6 +87,10 @@ with st.form("form-livro"):
     enviado = st.form_submit_button("Gerar miolo e EPUB", type="primary")
 
 
+# Guarda o resultado em st.session_state porque clicar num st.download_button
+# recarrega a página (como qualquer botão do Streamlit) — sem isso, o PDF e o
+# EPUB gerados "somem" depois do primeiro clique em baixar, e o outro arquivo
+# fica indisponível até gerar tudo de novo.
 if enviado:
     erros = []
     if manuscrito_upload is None:
@@ -97,6 +101,7 @@ if enviado:
         erros.append("Preencha o autor.")
 
     if erros:
+        st.session_state["resultado"] = None
         for erro in erros:
             st.error(erro)
     else:
@@ -134,38 +139,56 @@ if enviado:
                     except Exception as exc:  # noqa: BLE001
                         erro_execucao = exc
 
-                st.subheader("Log")
-                st.code(log.getvalue() or "(sem saída)", language=None)
-
                 if erro_execucao is not None:
-                    st.error(f"Falha ao gerar o livro: {erro_execucao}")
+                    st.session_state["resultado"] = {
+                        "log": log.getvalue(),
+                        "erro": str(erro_execucao),
+                    }
                 else:
                     pdf_path = saida_dir / "miolo.pdf"
                     epub_path = saida_dir / "livro.epub"
-
-                    col_pdf, col_epub = st.columns(2)
-                    with col_pdf:
-                        st.download_button(
-                            "Baixar PDF do miolo",
-                            data=pdf_path.read_bytes(),
-                            file_name=f"{titulo.strip() or 'miolo'}.pdf",
-                            mime="application/pdf",
-                        )
-                    with col_epub:
-                        st.download_button(
-                            "Baixar EPUB",
-                            data=epub_path.read_bytes(),
-                            file_name=f"{titulo.strip() or 'livro'}.epub",
-                            mime="application/epub+zip",
-                        )
-
-                    st.subheader("Prévia do PDF")
-                    pdf_base64 = base64.b64encode(pdf_path.read_bytes()).decode("ascii")
-                    st.markdown(
-                        f'<iframe src="data:application/pdf;base64,{pdf_base64}" '
-                        f'width="100%" height="800" style="border: 1px solid #ccc;">'
-                        f"</iframe>",
-                        unsafe_allow_html=True,
-                    )
+                    st.session_state["resultado"] = {
+                        "log": log.getvalue(),
+                        "erro": None,
+                        "titulo": titulo.strip(),
+                        "pdf_bytes": pdf_path.read_bytes(),
+                        "epub_bytes": epub_path.read_bytes(),
+                    }
             finally:
                 shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
+resultado = st.session_state.get("resultado")
+if resultado:
+    st.subheader("Log")
+    st.code(resultado["log"] or "(sem saída)", language=None)
+
+    if resultado["erro"] is not None:
+        st.error(f"Falha ao gerar o livro: {resultado['erro']}")
+    else:
+        col_pdf, col_epub = st.columns(2)
+        with col_pdf:
+            st.download_button(
+                "Baixar PDF do miolo",
+                data=resultado["pdf_bytes"],
+                file_name=f"{resultado['titulo'] or 'miolo'}.pdf",
+                mime="application/pdf",
+                key="download-pdf",
+            )
+        with col_epub:
+            st.download_button(
+                "Baixar EPUB",
+                data=resultado["epub_bytes"],
+                file_name=f"{resultado['titulo'] or 'livro'}.epub",
+                mime="application/epub+zip",
+                key="download-epub",
+            )
+
+        st.subheader("Prévia do PDF")
+        pdf_base64 = base64.b64encode(resultado["pdf_bytes"]).decode("ascii")
+        st.markdown(
+            f'<iframe src="data:application/pdf;base64,{pdf_base64}" '
+            f'width="100%" height="800" style="border: 1px solid #ccc;">'
+            f"</iframe>",
+            unsafe_allow_html=True,
+        )

@@ -1,6 +1,6 @@
 # Confluence Dashboard — Multi-Timeframe BUY/SELL
 
-Indicador em Pine Script v5 para TradingView. Combina tendência (EMA), momentum (RSI)
+Indicador em Pine Script v6 para TradingView. Combina tendência (EMA), momentum (RSI)
 e viés de volatilidade (banda de ATR) em três timeframes ao mesmo tempo, e resume tudo
 em sinais claros de **BUY**/**SELL** no gráfico, com alertas prontos.
 
@@ -36,6 +36,7 @@ O sinal só aparece na virada (não repete a cada barra).
 | Limiar de confluência | Soma mínima (em módulo) das 3 timeframes para disparar um sinal |
 | Aguardar fechamento do candle | Reduz repintura, exigindo que o candle feche antes de confirmar o sinal |
 | Habilitar alertas de saída/neutralidade | Dispara um alerta separado quando o `total` cruza de volta a zona neutra (0), sinalizando que a confluência que gerou a entrada se desfez |
+| Mínimo de barras entre sinais consecutivos | 0 desativa; um valor > 0 exige esse número de barras desde o último sinal antes de disparar outro — reduz whipsaw em timeframes baixos |
 
 ## Validação de timeframes
 
@@ -66,6 +67,7 @@ contrário completo.
   garantida — como qualquer ferramenta de análise técnica, gera falsos sinais, especialmente
   em mercados sem tendência definida (lateralizados).
 - Não executa ordens sozinho: é uma ferramenta de apoio à decisão, não um robô de trading.
+- **Whipsaw em timeframes muito baixos**: em testes no gráfico de 1 minuto (com Timeframe 2 = 60 e Timeframe 3 = 240), os sinais ficaram amontoados/ruidosos — timeframes curtos geram muito mais cruzamentos de EMA/RSI/ATR por natureza, então a confluência oscila rápido demais para ser acionável. **Recomendação: evitar usar em gráficos abaixo de 5-15 minutos**, ou usar o input "Mínimo de barras entre sinais consecutivos" (ex: 10-15) para filtrar sinais muito próximos nesses casos.
 
 ## Backtest (`confluence_dashboard_strategy.pine`)
 
@@ -99,6 +101,8 @@ ao indicador:
 7. Colar `confluence_dashboard_strategy.pine` em outra aba do Pine Editor, aplicar ao
    gráfico e conferir os resultados na aba "Strategy Tester" (ajustando comissão/slippage
    para o ativo testado antes de confiar nos números).
+8. Em timeframes baixos (ex: 1 minuto), testar o input "Mínimo de barras entre sinais
+   consecutivos" com valores como 10-15 e comparar a quantidade de sinais antes/depois.
 
 ## Publicar e vender na TradingView (passo manual, fora do código)
 
@@ -125,14 +129,15 @@ ao indicador:
 >
 > Ideal tanto para quem está começando quanto para traders experientes que querem
 > automatizar a checagem de múltiplas timeframes.
+>
+> **Aviso de risco:** este script é uma ferramenta de análise técnica e não constitui
+> recomendação de investimento nem promessa de resultado. Negociar envolve risco real de
+> perda de capital, incluindo a totalidade do capital investido. Resultados passados,
+> simulados ou de backtest não garantem resultados futuros. Use por sua conta e risco,
+> com gestão de risco adequada, e não em timeframes abaixo de 5-15 minutos sem ajustar o
+> filtro de sinais consecutivos (ver seção de limitações conhecidas).
 
 **Tags sugeridas:** confluence, multi-timeframe, buy sell signals, trend, momentum, dashboard
 
-## Pendências da auditoria (não bloqueantes)
-
-Da lista de feedback da auditoria, dois itens ficaram de fora desta rodada por opção
-explícita (foco em validação de timeframe, alertas de saída e backtest primeiro):
-
-- Migrar para Pine v6.
-- Disclaimer de risco no texto de descrição do script — exigência da TradingView para
-  scripts pagos/invite-only. Precisa entrar no rascunho de descrição acima antes de publicar.
+Nota: a TradingView é uma plataforma internacional — para maximizar alcance na listagem,
+vale traduzir a descrição (incluindo o aviso de risco) também para o inglês antes de publicar.

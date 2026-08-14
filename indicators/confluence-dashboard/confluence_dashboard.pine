@@ -1,4 +1,4 @@
-//@version=5
+//@version=6
 indicator("Confluence Dashboard - Multi-Timeframe BUY/SELL", shorttitle="ConfluenceDash", overlay=true)
 
 // ---------------------------------------------------------------------------
@@ -19,6 +19,8 @@ atrLen = input.int(14, "Período ATR", minval=1, group="Volatilidade")
 threshold = input.int(5, "Limiar de confluência para sinal (soma das 3 timeframes)", minval=1, maxval=9, group="Sinal")
 waitForClose = input.bool(true, "Aguardar fechamento do candle antes de sinalizar (reduz repintura)", group="Sinal")
 enableExitAlerts = input.bool(false, "Habilitar alertas de saída/neutralidade (total cruza 0)", group="Sinal")
+minBarsBetweenSignals = input.int(0, "Mínimo de barras entre sinais consecutivos (0 = desativado)", minval=0, group="Sinal",
+     tooltip="Em timeframes muito baixos (ex: 1 minuto) os sinais tendem a ficar amontoados/whipsaw. Defina um valor (ex: 10-15) para exigir um intervalo mínimo desde o último sinal antes de disparar outro.")
 
 // ---------------------------------------------------------------------------
 // VALIDAÇÃO DE TIMEFRAMES
@@ -66,8 +68,14 @@ total = scoreTf1 + scoreTf2 + scoreTf3
 buySignalRaw = ta.crossover(total, threshold)
 sellSignalRaw = ta.crossunder(total, -threshold)
 
-buySignal = (waitForClose ? (buySignalRaw and barstate.isconfirmed) : buySignalRaw) and not tfWarning
-sellSignal = (waitForClose ? (sellSignalRaw and barstate.isconfirmed) : sellSignalRaw) and not tfWarning
+var int lastSignalBar = na
+cooldownOk = minBarsBetweenSignals == 0 or na(lastSignalBar) or (bar_index - lastSignalBar) >= minBarsBetweenSignals
+
+buySignal = (waitForClose ? (buySignalRaw and barstate.isconfirmed) : buySignalRaw) and not tfWarning and cooldownOk
+sellSignal = (waitForClose ? (sellSignalRaw and barstate.isconfirmed) : sellSignalRaw) and not tfWarning and cooldownOk
+
+if buySignal or sellSignal
+    lastSignalBar := bar_index
 
 plotshape(buySignal, title="BUY", text="BUY", style=shape.labelup, location=location.belowbar,
      color=color.new(color.green, 0), textcolor=color.white, size=size.small)

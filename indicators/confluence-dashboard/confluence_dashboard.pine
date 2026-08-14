@@ -18,6 +18,26 @@ atrLen = input.int(14, "Período ATR", minval=1, group="Volatilidade")
 
 threshold = input.int(5, "Limiar de confluência para sinal (soma das 3 timeframes)", minval=1, maxval=9, group="Sinal")
 waitForClose = input.bool(true, "Aguardar fechamento do candle antes de sinalizar (reduz repintura)", group="Sinal")
+enableExitAlerts = input.bool(false, "Habilitar alertas de saída/neutralidade (total cruza 0)", group="Sinal")
+
+// ---------------------------------------------------------------------------
+// VALIDAÇÃO DE TIMEFRAMES
+// tf2/tf3 precisam ser MAIORES que o timeframe do gráfico. Se não forem,
+// request.security() consulta a mesma barra (ou uma menor) em formação,
+// o que deixa o score instável e sujeito a repintura sem ganho de confluência
+// real. Em vez de travar o script, avisamos visualmente e suspendemos os sinais.
+// ---------------------------------------------------------------------------
+tf2Invalid = timeframe.in_seconds(tf2) <= timeframe.in_seconds()
+tf3Invalid = timeframe.in_seconds(tf3) <= timeframe.in_seconds()
+tfWarning = tf2Invalid or tf3Invalid
+
+var label tfWarnLabel = na
+if barstate.islast
+    label.delete(tfWarnLabel)
+    if tfWarning
+        tfWarnLabel := label.new(bar_index, high, "⚠ Ajuste Timeframe 2/3: devem ser MAIORES que o timeframe do gráfico", style=label.style_label_down, color=color.orange, textcolor=color.white, size=size.small)
+
+bgcolor(tfWarning ? color.new(color.orange, 90) : na, title="Aviso: timeframe inválido")
 
 // ---------------------------------------------------------------------------
 // SCORE POR TIMEFRAME
@@ -46,8 +66,8 @@ total = scoreTf1 + scoreTf2 + scoreTf3
 buySignalRaw = ta.crossover(total, threshold)
 sellSignalRaw = ta.crossunder(total, -threshold)
 
-buySignal = waitForClose ? (buySignalRaw and barstate.isconfirmed) : buySignalRaw
-sellSignal = waitForClose ? (sellSignalRaw and barstate.isconfirmed) : sellSignalRaw
+buySignal = (waitForClose ? (buySignalRaw and barstate.isconfirmed) : buySignalRaw) and not tfWarning
+sellSignal = (waitForClose ? (sellSignalRaw and barstate.isconfirmed) : sellSignalRaw) and not tfWarning
 
 plotshape(buySignal, title="BUY", text="BUY", style=shape.labelup, location=location.belowbar,
      color=color.new(color.green, 0), textcolor=color.white, size=size.small)
@@ -56,6 +76,23 @@ plotshape(sellSignal, title="SELL", text="SELL", style=shape.labeldown, location
 
 alertcondition(buySignal, title="Sinal de COMPRA", message="Confluence Dashboard: sinal de COMPRA em {{ticker}} ({{interval}})")
 alertcondition(sellSignal, title="Sinal de VENDA", message="Confluence Dashboard: sinal de VENDA em {{ticker}} ({{interval}})")
+
+// ---------------------------------------------------------------------------
+// SAÍDA / NEUTRALIDADE (opcional): total volta a cruzar a linha 0, indicando
+// que a confluência que sustentava a entrada se desfez.
+// ---------------------------------------------------------------------------
+exitLongRaw = ta.crossunder(total, 0)
+exitShortRaw = ta.crossover(total, 0)
+exitLongSignal = (waitForClose ? (exitLongRaw and barstate.isconfirmed) : exitLongRaw) and enableExitAlerts and not tfWarning
+exitShortSignal = (waitForClose ? (exitShortRaw and barstate.isconfirmed) : exitShortRaw) and enableExitAlerts and not tfWarning
+
+plotshape(showAdvanced and exitLongSignal, title="Saída (neutro, de compra)", style=shape.circle,
+     location=location.abovebar, color=color.new(color.gray, 0), size=size.tiny)
+plotshape(showAdvanced and exitShortSignal, title="Saída (neutro, de venda)", style=shape.circle,
+     location=location.belowbar, color=color.new(color.gray, 0), size=size.tiny)
+
+alertcondition(exitLongSignal, title="Saída/Neutralidade (vindo de compra)", message="Confluence Dashboard: total voltou à zona neutra vindo de alta em {{ticker}} ({{interval}}) - considerar saída de compra")
+alertcondition(exitShortSignal, title="Saída/Neutralidade (vindo de venda)", message="Confluence Dashboard: total voltou à zona neutra vindo de baixa em {{ticker}} ({{interval}}) - considerar saída de venda")
 
 // ---------------------------------------------------------------------------
 // MODO AVANÇADO: EMAs no gráfico + painel de confluência por timeframe

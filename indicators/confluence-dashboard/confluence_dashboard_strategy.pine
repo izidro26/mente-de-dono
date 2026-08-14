@@ -1,0 +1,95 @@
+//@version=5
+// Versão de BACKTEST do Confluence Dashboard.
+// Mesma lógica de score/sinal do indicador (confluence_dashboard.pine), mas em
+// strategy() para poder ser testada no Strategy Tester nativo da TradingView
+// (taxa de acerto, drawdown, profit factor etc.) antes de vender o indicador.
+// NÃO é o script publicado/vendido — é apenas a ferramenta de validação.
+strategy("Confluence Dashboard - Backtest", shorttitle="ConfluenceDashStrat", overlay=true,
+     initial_capital=10000, currency=currency.USD,
+     default_qty_type=strategy.percent_of_equity, default_qty_value=10,
+     commission_type=strategy.commission.percent, commission_value=0.05,
+     slippage=2, calc_on_every_tick=false)
+
+// ---------------------------------------------------------------------------
+// INPUTS
+// Comissão (0.05%) e slippage (2 ticks) acima são um ponto de partida (custos
+// típicos de exchange de cripto). Ajuste commission_value/slippage no cabeçalho
+// do strategy() para o ativo/corretora que for testar (ações e forex costumam
+// ter estrutura de custo diferente).
+// ---------------------------------------------------------------------------
+tf2 = input.timeframe("60", "Timeframe 2", group="Timeframes")
+tf3 = input.timeframe("240", "Timeframe 3", group="Timeframes")
+
+emaFastLen = input.int(9, "EMA rápida", minval=1, group="Tendência")
+emaSlowLen = input.int(21, "EMA lenta", minval=2, group="Tendência")
+rsiLen = input.int(14, "Período RSI", minval=1, group="Momentum")
+atrLen = input.int(14, "Período ATR", minval=1, group="Volatilidade")
+
+threshold = input.int(5, "Limiar de confluência para sinal (soma das 3 timeframes)", minval=1, maxval=9, group="Sinal")
+waitForClose = input.bool(true, "Aguardar fechamento do candle antes de sinalizar (reduz repintura)", group="Sinal")
+enableNeutralExit = input.bool(true, "Fechar posição quando o total voltar à zona neutra (cruzar 0)", group="Sinal")
+
+// ---------------------------------------------------------------------------
+// VALIDAÇÃO DE TIMEFRAMES (mesma checagem do indicador)
+// ---------------------------------------------------------------------------
+tf2Invalid = timeframe.in_seconds(tf2) <= timeframe.in_seconds()
+tf3Invalid = timeframe.in_seconds(tf3) <= timeframe.in_seconds()
+tfWarning = tf2Invalid or tf3Invalid
+
+var label tfWarnLabel = na
+if barstate.islast
+    label.delete(tfWarnLabel)
+    if tfWarning
+        tfWarnLabel := label.new(bar_index, high, "⚠ Ajuste Timeframe 2/3: devem ser MAIORES que o timeframe do gráfico", style=label.style_label_down, color=color.orange, textcolor=color.white, size=size.small)
+
+// ---------------------------------------------------------------------------
+// SCORE POR TIMEFRAME (idêntico ao indicador)
+// ---------------------------------------------------------------------------
+f_score(_emaFastLen, _emaSlowLen, _rsiLen, _atrLen) =>
+    emaFast = ta.ema(close, _emaFastLen)
+    emaSlow = ta.ema(close, _emaSlowLen)
+    rsiVal = ta.rsi(close, _rsiLen)
+    atrVal = ta.atr(_atrLen)
+    trendScore = emaFast > emaSlow ? 1 : emaFast < emaSlow ? -1 : 0
+    momScore = rsiVal > 50 ? 1 : rsiVal < 50 ? -1 : 0
+    volBias = close > (emaSlow + atrVal) ? 1 : close < (emaSlow - atrVal) ? -1 : 0
+    trendScore + momScore + volBias
+
+scoreTf1 = f_score(emaFastLen, emaSlowLen, rsiLen, atrLen)
+scoreTf2 = request.security(syminfo.tickerid, tf2, f_score(emaFastLen, emaSlowLen, rsiLen, atrLen), lookahead=barmerge.lookahead_off)
+scoreTf3 = request.security(syminfo.tickerid, tf3, f_score(emaFastLen, emaSlowLen, rsiLen, atrLen), lookahead=barmerge.lookahead_off)
+
+total = scoreTf1 + scoreTf2 + scoreTf3
+
+// ---------------------------------------------------------------------------
+// SINAIS (idênticos ao indicador)
+// ---------------------------------------------------------------------------
+buySignalRaw = ta.crossover(total, threshold)
+sellSignalRaw = ta.crossunder(total, -threshold)
+buySignal = (waitForClose ? (buySignalRaw and barstate.isconfirmed) : buySignalRaw) and not tfWarning
+sellSignal = (waitForClose ? (sellSignalRaw and barstate.isconfirmed) : sellSignalRaw) and not tfWarning
+
+exitLongRaw = ta.crossunder(total, 0)
+exitShortRaw = ta.crossover(total, 0)
+exitLongSignal = (waitForClose ? (exitLongRaw and barstate.isconfirmed) : exitLongRaw) and enableNeutralExit and not tfWarning
+exitShortSignal = (waitForClose ? (exitShortRaw and barstate.isconfirmed) : exitShortRaw) and enableNeutralExit and not tfWarning
+
+plotshape(buySignal, title="BUY", text="BUY", style=shape.labelup, location=location.belowbar,
+     color=color.new(color.green, 0), textcolor=color.white, size=size.small)
+plotshape(sellSignal, title="SELL", text="SELL", style=shape.labeldown, location=location.abovebar,
+     color=color.new(color.red, 0), textcolor=color.white, size=size.small)
+
+// ---------------------------------------------------------------------------
+// EXECUÇÃO NO STRATEGY TESTER
+// Entrar comprado no BUY / vendido no SELL fecha e reverte a posição contrária
+// automaticamente (comportamento padrão do strategy.entry). O fechamento por
+// neutralidade (total cruzando 0) é a saída explícita entre reversões.
+// ---------------------------------------------------------------------------
+if buySignal
+    strategy.entry("Long", strategy.long)
+if sellSignal
+    strategy.entry("Short", strategy.short)
+if exitLongSignal
+    strategy.close("Long", comment="Saída neutra")
+if exitShortSignal
+    strategy.close("Short", comment="Saída neutra")

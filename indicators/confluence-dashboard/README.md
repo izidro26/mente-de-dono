@@ -35,6 +35,24 @@ O sinal só aparece na virada (não repete a cada barra).
 | Período ATR | Período do ATR usado no viés de volatilidade |
 | Limiar de confluência | Soma mínima (em módulo) das 3 timeframes para disparar um sinal |
 | Aguardar fechamento do candle | Reduz repintura, exigindo que o candle feche antes de confirmar o sinal |
+| Habilitar alertas de saída/neutralidade | Dispara um alerta separado quando o `total` cruza de volta a zona neutra (0), sinalizando que a confluência que gerou a entrada se desfez |
+
+## Validação de timeframes
+
+Timeframe 2 e Timeframe 3 precisam ser **maiores** que o timeframe do gráfico. Se um
+deles for igual ou menor, `request.security()` passa a consultar a mesma barra (ou uma
+menor) em formação, o que deixa o score instável e sujeito a repintura sem nenhum ganho
+real de confluência multi-timeframe. Nesse caso o indicador não trava: ele tinta o fundo
+do gráfico de laranja, mostra um aviso ("⚠ Ajuste Timeframe 2/3...") e **suspende os
+sinais de BUY/SELL/saída** até a configuração ser corrigida.
+
+## Saída / neutralidade
+
+Além dos sinais de entrada, o indicador pode opcionalmente (input "Habilitar alertas de
+saída/neutralidade") avisar quando o `total` cruza de volta a linha 0 — ou seja, quando a
+confluência que sustentava a posição comprada/vendida se desfez. É um alerta separado dos
+de BUY/SELL, pensado para quem quer ser avisado de sair antes que apareça um sinal
+contrário completo.
 
 ## Limitações conhecidas (importante deixar claro para quem for comprar)
 
@@ -42,11 +60,29 @@ O sinal só aparece na virada (não repete a cada barra).
   timeframes maiores dentro do timeframe do gráfico, o valor da barra em formação da
   timeframe maior pode mudar até ela fechar. Isso é uma limitação inerente do Pine Script,
   não um bug. A opção "Aguardar fechamento do candle" reduz o problema, exigindo confirmação
-  antes de disparar o sinal.
+  antes de disparar o sinal. A validação de timeframes (acima) cobre o caso mais grave desse
+  mesmo problema, quando tf2/tf3 estão configurados igual ou menor que o gráfico.
 - Este é um indicador de **confluência de indicadores técnicos clássicos**, não uma previsão
   garantida — como qualquer ferramenta de análise técnica, gera falsos sinais, especialmente
   em mercados sem tendência definida (lateralizados).
 - Não executa ordens sozinho: é uma ferramenta de apoio à decisão, não um robô de trading.
+
+## Backtest (`confluence_dashboard_strategy.pine`)
+
+Arquivo separado com a mesma lógica de score/sinal, mas em `strategy()` em vez de
+`indicator()`, para rodar no Strategy Tester nativo da TradingView (taxa de acerto, profit
+factor, drawdown máximo etc.) antes de publicar/vender o indicador. Diferenças em relação
+ao indicador:
+
+- Entra comprado no sinal de BUY e vendido no sinal de SELL (reversão automática).
+- Fecha a posição quando o `total` volta à zona neutra (cruza 0) — input "Fechar posição
+  quando o total voltar à zona neutra", ligado por padrão nessa versão, ao contrário do
+  indicador onde o alerta equivalente vem desligado por padrão.
+- Comissão (0.05%) e slippage (2 ticks) configurados no cabeçalho do `strategy()` como
+  ponto de partida realista de exchange de cripto — **ajuste esses valores** para o
+  ativo/corretora real antes de tirar conclusões do backtest (ações e forex têm estrutura
+  de custo diferente).
+- **Não é o script publicado/vendido** — é só a ferramenta de validação da estratégia.
 
 ## Como testar
 
@@ -56,7 +92,13 @@ O sinal só aparece na virada (não repete a cada barra).
 4. Testar em modo Simples e Avançado, em diferentes ativos/timeframes, e comparar
    os sinais BUY/SELL com o comportamento do preço.
 5. Configurar um alerta (ícone de relógio) usando as condições "Sinal de COMPRA" /
-   "Sinal de VENDA" para validar que o alerta dispara no candle certo.
+   "Sinal de VENDA" para validar que o alerta dispara no candle certo. Testar também os
+   alertas de saída/neutralidade com "Habilitar alertas de saída/neutralidade" ligado.
+6. Configurar Timeframe 2 ou 3 igual/menor que o do gráfico e confirmar que o aviso laranja
+   aparece e os sinais somem.
+7. Colar `confluence_dashboard_strategy.pine` em outra aba do Pine Editor, aplicar ao
+   gráfico e conferir os resultados na aba "Strategy Tester" (ajustando comissão/slippage
+   para o ativo testado antes de confiar nos números).
 
 ## Publicar e vender na TradingView (passo manual, fora do código)
 
@@ -85,3 +127,12 @@ O sinal só aparece na virada (não repete a cada barra).
 > automatizar a checagem de múltiplas timeframes.
 
 **Tags sugeridas:** confluence, multi-timeframe, buy sell signals, trend, momentum, dashboard
+
+## Pendências da auditoria (não bloqueantes)
+
+Da lista de feedback da auditoria, dois itens ficaram de fora desta rodada por opção
+explícita (foco em validação de timeframe, alertas de saída e backtest primeiro):
+
+- Migrar para Pine v6.
+- Disclaimer de risco no texto de descrição do script — exigência da TradingView para
+  scripts pagos/invite-only. Precisa entrar no rascunho de descrição acima antes de publicar.

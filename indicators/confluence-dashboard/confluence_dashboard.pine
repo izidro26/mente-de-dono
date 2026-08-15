@@ -1,0 +1,128 @@
+//@version=6
+indicator("Confluence Dashboard - Multi-Timeframe BUY/SELL", shorttitle="ConfluenceDash", overlay=true)
+
+// ---------------------------------------------------------------------------
+// INPUTS
+// ---------------------------------------------------------------------------
+displayMode = input.string("Simples", "Modo de exibição", options=["Simples", "Avançado"], group="Geral",
+     tooltip="Simples: só mostra os sinais BUY/SELL no gráfico. Avançado: mostra também o painel de confluência por timeframe e as EMAs.")
+showAdvanced = displayMode == "Avançado"
+
+tf2 = input.timeframe("60", "Timeframe 2", group="Timeframes")
+tf3 = input.timeframe("240", "Timeframe 3", group="Timeframes")
+
+emaFastLen = input.int(9, "EMA rápida", minval=1, group="Tendência")
+emaSlowLen = input.int(21, "EMA lenta", minval=2, group="Tendência")
+rsiLen = input.int(14, "Período RSI", minval=1, group="Momentum")
+atrLen = input.int(14, "Período ATR", minval=1, group="Volatilidade")
+
+threshold = input.int(5, "Limiar de confluência para sinal (soma das 3 timeframes)", minval=1, maxval=9, group="Sinal")
+waitForClose = input.bool(true, "Aguardar fechamento do candle antes de sinalizar (reduz repintura)", group="Sinal")
+enableExitAlerts = input.bool(false, "Habilitar alertas de saída/neutralidade (total cruza 0)", group="Sinal")
+minBarsBetweenSignals = input.int(0, "Mínimo de barras entre sinais consecutivos (0 = desativado)", minval=0, group="Sinal",
+     tooltip="Em timeframes muito baixos (ex: 1 minuto) os sinais tendem a ficar amontoados/whipsaw. Defina um valor (ex: 10-15) para exigir um intervalo mínimo desde o último sinal antes de disparar outro.")
+
+// ---------------------------------------------------------------------------
+// VALIDAÇÃO DE TIMEFRAMES
+// tf2/tf3 precisam ser MAIORES que o timeframe do gráfico. Se não forem,
+// request.security() consulta a mesma barra (ou uma menor) em formação,
+// o que deixa o score instável e sujeito a repintura sem ganho de confluência
+// real. Em vez de travar o script, avisamos visualmente e suspendemos os sinais.
+// ---------------------------------------------------------------------------
+tf2Invalid = timeframe.in_seconds(tf2) <= timeframe.in_seconds()
+tf3Invalid = timeframe.in_seconds(tf3) <= timeframe.in_seconds()
+tfWarning = tf2Invalid or tf3Invalid
+
+var label tfWarnLabel = na
+if barstate.islast
+    label.delete(tfWarnLabel)
+    if tfWarning
+        tfWarnLabel := label.new(bar_index, high, "⚠ Ajuste Timeframe 2/3: devem ser MAIORES que o timeframe do gráfico", style=label.style_label_down, color=color.orange, textcolor=color.white, size=size.small)
+
+bgcolor(tfWarning ? color.new(color.orange, 90) : na, title="Aviso: timeframe inválido")
+
+// ---------------------------------------------------------------------------
+// SCORE POR TIMEFRAME
+// Combina tendência (EMA), momentum (RSI) e viés de volatilidade (banda ATR)
+// em uma pontuação de -3 (bearish total) a +3 (bullish total).
+// ---------------------------------------------------------------------------
+f_score(_emaFastLen, _emaSlowLen, _rsiLen, _atrLen) =>
+    emaFast = ta.ema(close, _emaFastLen)
+    emaSlow = ta.ema(close, _emaSlowLen)
+    rsiVal = ta.rsi(close, _rsiLen)
+    atrVal = ta.atr(_atrLen)
+    trendScore = emaFast > emaSlow ? 1 : emaFast < emaSlow ? -1 : 0
+    momScore = rsiVal > 50 ? 1 : rsiVal < 50 ? -1 : 0
+    volBias = close > (emaSlow + atrVal) ? 1 : close < (emaSlow - atrVal) ? -1 : 0
+    trendScore + momScore + volBias
+
+scoreTf1 = f_score(emaFastLen, emaSlowLen, rsiLen, atrLen)
+scoreTf2 = request.security(syminfo.tickerid, tf2, f_score(emaFastLen, emaSlowLen, rsiLen, atrLen), lookahead=barmerge.lookahead_off)
+scoreTf3 = request.security(syminfo.tickerid, tf3, f_score(emaFastLen, emaSlowLen, rsiLen, atrLen), lookahead=barmerge.lookahead_off)
+
+total = scoreTf1 + scoreTf2 + scoreTf3
+
+// ---------------------------------------------------------------------------
+// SINAIS DE ENTRADA (só na virada do limiar, não a cada barra)
+// ---------------------------------------------------------------------------
+buySignalRaw = ta.crossover(total, threshold)
+sellSignalRaw = ta.crossunder(total, -threshold)
+
+var int lastSignalBar = na
+cooldownOk = minBarsBetweenSignals == 0 or na(lastSignalBar) or (bar_index - lastSignalBar) >= minBarsBetweenSignals
+
+buySignal = (waitForClose ? (buySignalRaw and barstate.isconfirmed) : buySignalRaw) and not tfWarning and cooldownOk
+sellSignal = (waitForClose ? (sellSignalRaw and barstate.isconfirmed) : sellSignalRaw) and not tfWarning and cooldownOk
+
+if buySignal or sellSignal
+    lastSignalBar := bar_index
+
+plotshape(buySignal, title="BUY", text="BUY", style=shape.labelup, location=location.belowbar,
+     color=color.new(color.green, 0), textcolor=color.white, size=size.small)
+plotshape(sellSignal, title="SELL", text="SELL", style=shape.labeldown, location=location.abovebar,
+     color=color.new(color.red, 0), textcolor=color.white, size=size.small)
+
+alertcondition(buySignal, title="Sinal de COMPRA", message="Confluence Dashboard: sinal de COMPRA em {{ticker}} ({{interval}})")
+alertcondition(sellSignal, title="Sinal de VENDA", message="Confluence Dashboard: sinal de VENDA em {{ticker}} ({{interval}})")
+
+// ---------------------------------------------------------------------------
+// SAÍDA / NEUTRALIDADE (opcional): total volta a cruzar a linha 0, indicando
+// que a confluência que sustentava a entrada se desfez.
+// ---------------------------------------------------------------------------
+exitLongRaw = ta.crossunder(total, 0)
+exitShortRaw = ta.crossover(total, 0)
+exitLongSignal = (waitForClose ? (exitLongRaw and barstate.isconfirmed) : exitLongRaw) and enableExitAlerts and not tfWarning
+exitShortSignal = (waitForClose ? (exitShortRaw and barstate.isconfirmed) : exitShortRaw) and enableExitAlerts and not tfWarning
+
+plotshape(showAdvanced and exitLongSignal, title="Saída (neutro, de compra)", style=shape.circle,
+     location=location.abovebar, color=color.new(color.gray, 0), size=size.tiny)
+plotshape(showAdvanced and exitShortSignal, title="Saída (neutro, de venda)", style=shape.circle,
+     location=location.belowbar, color=color.new(color.gray, 0), size=size.tiny)
+
+alertcondition(exitLongSignal, title="Saída/Neutralidade (vindo de compra)", message="Confluence Dashboard: total voltou à zona neutra vindo de alta em {{ticker}} ({{interval}}) - considerar saída de compra")
+alertcondition(exitShortSignal, title="Saída/Neutralidade (vindo de venda)", message="Confluence Dashboard: total voltou à zona neutra vindo de baixa em {{ticker}} ({{interval}}) - considerar saída de venda")
+
+// ---------------------------------------------------------------------------
+// MODO AVANÇADO: EMAs no gráfico + painel de confluência por timeframe
+// ---------------------------------------------------------------------------
+emaFastPlot = ta.ema(close, emaFastLen)
+emaSlowPlot = ta.ema(close, emaSlowLen)
+plot(showAdvanced ? emaFastPlot : na, color=color.blue, title="EMA Rápida")
+plot(showAdvanced ? emaSlowPlot : na, color=color.orange, title="EMA Lenta")
+
+f_scoreColor(_score) =>
+    _score > 0 ? color.green : _score < 0 ? color.red : color.gray
+
+var table dashTable = showAdvanced ? table.new(position.top_right, 2, 5, border_width=1, bgcolor=color.new(color.black, 70)) : na
+
+if showAdvanced and barstate.islast
+    table.cell(dashTable, 0, 0, "Timeframe", text_color=color.white, bgcolor=color.gray)
+    table.cell(dashTable, 1, 0, "Score", text_color=color.white, bgcolor=color.gray)
+    table.cell(dashTable, 0, 1, "Atual", text_color=color.white)
+    table.cell(dashTable, 1, 1, str.tostring(scoreTf1), text_color=f_scoreColor(scoreTf1))
+    table.cell(dashTable, 0, 2, tf2, text_color=color.white)
+    table.cell(dashTable, 1, 2, str.tostring(scoreTf2), text_color=f_scoreColor(scoreTf2))
+    table.cell(dashTable, 0, 3, tf3, text_color=color.white)
+    table.cell(dashTable, 1, 3, str.tostring(scoreTf3), text_color=f_scoreColor(scoreTf3))
+    table.cell(dashTable, 0, 4, "Total", text_color=color.white, bgcolor=color.new(color.gray, 50))
+    table.cell(dashTable, 1, 4, str.tostring(total), text_color=f_scoreColor(total), bgcolor=color.new(color.gray, 50))

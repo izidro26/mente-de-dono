@@ -1,0 +1,56 @@
+//@version=6
+// Confluence Dashboard — Versão FREE.
+// Sinal simples de COMPRA/VENDA em um único timeframe (o do gráfico), combinando
+// tendência (EMA rápida x lenta) e momentum (RSI). Pensada como vitrine/aquisição
+// de audiência na TradingView.
+//
+// A versão PRO (confluence_dashboard.pine, vendida separadamente como script
+// invite-only) adiciona: confluência em até 3 timeframes simultâneas, filtro
+// anti-whipsaw (mínimo de barras entre sinais), viés de volatilidade via ATR no
+// score, e alertas de saída/neutralidade. Procure "Confluence Dashboard PRO" na
+// TradingView.
+indicator("Confluence Dashboard FREE - BUY/SELL Simples", shorttitle="ConfluenceDash Free", overlay=true)
+
+// ---------------------------------------------------------------------------
+// INPUTS
+// ---------------------------------------------------------------------------
+emaFastLen = input.int(9, "EMA rápida", minval=1, group="Tendência")
+emaSlowLen = input.int(21, "EMA lenta", minval=2, group="Tendência")
+rsiLen = input.int(14, "Período RSI", minval=1, group="Momentum")
+
+// ---------------------------------------------------------------------------
+// SCORE (tendência + momentum, timeframe único)
+// Versão PRO soma um terceiro componente de viés de volatilidade (ATR) e
+// combina o score de 3 timeframes — aqui fica só tendência + momentum do
+// gráfico atual, pontuação de -2 (bearish total) a +2 (bullish total).
+// ---------------------------------------------------------------------------
+emaFast = ta.ema(close, emaFastLen)
+emaSlow = ta.ema(close, emaSlowLen)
+rsiVal = ta.rsi(close, rsiLen)
+
+trendScore = emaFast > emaSlow ? 1 : emaFast < emaSlow ? -1 : 0
+momScore = rsiVal > 50 ? 1 : rsiVal < 50 ? -1 : 0
+score = trendScore + momScore
+
+// ---------------------------------------------------------------------------
+// SINAIS DE ENTRADA (só na virada, quando tendência e momentum se alinham
+// totalmente). Comportamento de confirmação de candle fixo (equivalente a
+// "Aguardar fechamento do candle" sempre ligado na versão PRO) para manter a
+// versão free simples, sem esse input configurável.
+// ---------------------------------------------------------------------------
+buySignalRaw = ta.crossover(score, 2)
+sellSignalRaw = ta.crossunder(score, -2)
+
+buySignal = buySignalRaw and barstate.isconfirmed
+sellSignal = sellSignalRaw and barstate.isconfirmed
+
+plot(emaFast, color=color.blue, title="EMA Rápida")
+plot(emaSlow, color=color.orange, title="EMA Lenta")
+
+plotshape(buySignal, title="BUY", text="BUY", style=shape.labelup, location=location.belowbar,
+     color=color.new(color.green, 0), textcolor=color.white, size=size.small)
+plotshape(sellSignal, title="SELL", text="SELL", style=shape.labeldown, location=location.abovebar,
+     color=color.new(color.red, 0), textcolor=color.white, size=size.small)
+
+alertcondition(buySignal, title="Sinal de COMPRA", message="Confluence Dashboard FREE: sinal de COMPRA em {{ticker}} ({{interval}})")
+alertcondition(sellSignal, title="Sinal de VENDA", message="Confluence Dashboard FREE: sinal de VENDA em {{ticker}} ({{interval}})")

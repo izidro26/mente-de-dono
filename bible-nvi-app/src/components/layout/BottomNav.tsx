@@ -10,8 +10,8 @@ function Icon({ d, active }: { d: string; active: boolean }) {
   return (
     <svg
       viewBox="0 0 24 24"
-      width={22}
-      height={22}
+      width={20}
+      height={20}
       fill="none"
       stroke="currentColor"
       strokeWidth={active ? 2.2 : 1.8}
@@ -49,6 +49,11 @@ const items: NavItem[] = [
     label: 'Notas',
     icon: (a) => <Icon active={a} d="M4 4h13l3 3v13a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1zM14 4v5h5M8 13h8M8 17h5" />,
   },
+  {
+    to: '/estudos',
+    label: 'Estudos',
+    icon: (a) => <Icon active={a} d="M12 4L3 9l9 5 9-5-9-5zM6 12v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5M20 9v6" />,
+  },
 ]
 
 export function BottomNav() {
@@ -72,7 +77,7 @@ export function BottomNav() {
               {({ isActive }) => (
                 <>
                   {item.icon(isActive)}
-                  {item.label}
+                  <span className="leading-none">{item.label}</span>
                 </>
               )}
             </NavLink>

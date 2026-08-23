@@ -11,6 +11,8 @@ import { Notes } from './pages/Notes'
 import { Memorize } from './pages/Memorize'
 import { Downloads } from './pages/Downloads'
 import { Settings } from './pages/Settings'
+import { Theology } from './pages/Theology'
+import { TheologyLocus } from './pages/TheologyLocus'
 import { useSettingsStore, applyThemeClass } from './store/useSettingsStore'
 
 function App() {
@@ -38,6 +40,8 @@ function App() {
           <Route path="/notas" element={<Notes />} />
           <Route path="/memorizar" element={<Memorize />} />
           <Route path="/downloads" element={<Downloads />} />
+          <Route path="/estudos" element={<Theology />} />
+          <Route path="/estudos/:id" element={<TheologyLocus />} />
           <Route path="/ajustes" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

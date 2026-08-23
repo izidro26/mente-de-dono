@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Verbo</string>
+    <string name="title_activity_main">Verbo</string>
+    <string name="package_name">com.verbo.biblia</string>
+    <string name="custom_url_scheme">com.verbo.biblia</string>
+</resources>

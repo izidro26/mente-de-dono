@@ -1,0 +1,55 @@
+name: Build Verbo Android APK
+
+# O sandbox de desenvolvimento não tem o Android SDK instalado nem acesso à
+# rede para baixá-lo (dl.google.com é bloqueado), então o APK é gerado aqui,
+# nos runners do GitHub, que já vêm com Android SDK + Gradle pré-instalados.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'bible-nvi-app/**'
+      - '.github/workflows/android-apk.yml'
+  pull_request:
+    paths:
+      - 'bible-nvi-app/**'
+      - '.github/workflows/android-apk.yml'
+  workflow_dispatch: {}
+
+defaults:
+  run:
+    working-directory: bible-nvi-app
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: bible-nvi-app/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Build do app web + sincronizar com o projeto Android
+        run: npm run cap:sync
+
+      - name: Build do APK (debug)
+        working-directory: bible-nvi-app/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Enviar APK como artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: verbo-debug-apk
+          path: bible-nvi-app/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

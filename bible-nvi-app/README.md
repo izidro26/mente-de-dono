@@ -35,6 +35,14 @@ O Verbo foi desenhado em torno de **hábito e retenção**, não só leitura:
   sem serviço externo) pronto para postar ou enviar.
 - 🔊 **Leitura em voz alta offline** — usa a Web Speech API nativa do
   navegador, sem depender de nenhum serviço de áudio externo.
+- 🎓 **Estudos Teológicos (nível avançado)** — uma seção separada, mais densa,
+  para quem já leu a Bíblia e quer ir além do devocional: os grandes temas
+  ("loci") da teologia sistemática (Bibliologia, Cristologia, Soteriologia,
+  Escatologia etc.), com as principais posições de diferentes tradições
+  cristãs lado a lado — Reformada, Luterana, Arminiana/Wesleyana, Católica,
+  Ortodoxa — sem apontar nenhuma como "a certa". A IA de aprofundamento dessa
+  seção segue a mesma regra de neutralidade doutrinária (ver
+  `src/lib/ai.ts`).
 - 🔒 **Privacidade por padrão** — notas, destaques, favoritos, progresso de
   planos e streak vivem só no IndexedDB do seu dispositivo. Não há conta,
   login ou servidor do Verbo coletando esses dados.
@@ -85,16 +93,48 @@ npm run lint       # oxlint
 
 Requer Node 20+.
 
+## Gerando o APK Android
+
+O app é empacotado como app Android nativo via [Capacitor](https://capacitorjs.com/)
+(`android/` é o projeto nativo gerado por `npx cap add android`, já commitado).
+
+**Automático (recomendado):** todo push em `bible-nvi-app/**` dispara o
+workflow `.github/workflows/android-apk.yml`, que builda o APK debug nos
+runners do GitHub (eles já vêm com Android SDK) e o publica como artefato do
+workflow — baixe em **Actions → Build Verbo Android APK → (execução) →
+Artifacts**. Também dá pra disparar manualmente pela aba Actions
+("Run workflow").
+
+**Local**, se você tiver o Android SDK instalado (via Android Studio):
+
+```bash
+npm run android:debug     # gera android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+> Por quê não geramos o APK aqui no sandbox de desenvolvimento? Ele não tem o
+> Android SDK instalado nem acesso de rede a `dl.google.com` (necessário para
+> baixá-lo), então o build acontece no GitHub Actions. O ícone do app usa o
+> placeholder padrão do Capacitor por enquanto — troque em
+> `android/app/src/main/res/mipmap-*` (ou pelo Android Studio's Image Asset
+> Studio) quando quiser um ícone customizado. Para publicar na Play Store,
+> seria necessário gerar um build `release` assinado com uma keystore própria
+> (`npm run android:release` + configuração de assinatura), o que não está
+> feito aqui de propósito — assinatura de release é uma decisão que só o
+> dono da conta de desenvolvedor deve tomar.
+
 ## Estrutura do projeto
 
 ```
 src/
-  data/            # metadados estruturais: 66 livros, planos de leitura
+  data/            # metadados estruturais: 66 livros, planos de leitura,
+                    # conteúdo de teologia sistemática (estudos)
   lib/             # camada de dados/serviços (Dexie, provedor bíblico,
                     # SRS, TTS, compartilhar imagem, IA, referências)
   store/           # estado global (Zustand): preferências, última leitura
   components/      # componentes de UI reutilizáveis
   pages/           # uma página por rota
+android/           # projeto nativo Android gerado pelo Capacitor (commitado)
+.github/workflows/ # pipeline de build do APK (roda nos runners do GitHub)
 ```
 
 ## Configuração opcional

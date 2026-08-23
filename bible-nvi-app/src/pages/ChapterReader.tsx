@@ -127,7 +127,7 @@ export function ChapterReader() {
       {verses && (
         <>
           <div
-            className="font-scripture space-y-3 px-4 py-5 leading-relaxed"
+            className="font-scripture space-y-4 px-4 py-5"
             style={{ fontSize: FONT_SIZE_PX[fontSize] }}
           >
             {verses.map((v) => {

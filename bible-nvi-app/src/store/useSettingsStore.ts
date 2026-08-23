@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { DEFAULT_AI_MODEL } from '../lib/ai'
 
-export type ThemeMode = 'light' | 'dark' | 'system'
+export type ThemeMode = 'light' | 'dark' | 'sepia' | 'system'
 export type FontSize = 'sm' | 'md' | 'lg' | 'xl'
 
 interface SettingsState {
@@ -66,8 +66,9 @@ export const useSettingsStore = create<SettingsState>()(
 export function applyThemeClass(theme: ThemeMode): void {
   const root = document.documentElement
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-  const isDark = theme === 'dark' || (theme === 'system' && prefersDark)
-  root.classList.toggle('dark', isDark)
+  const resolved = theme === 'system' ? (prefersDark ? 'dark' : 'light') : theme
+  root.classList.toggle('dark', resolved === 'dark')
+  root.classList.toggle('sepia', resolved === 'sepia')
 }
 
 export const FONT_SIZE_PX: Record<FontSize, string> = {

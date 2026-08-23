@@ -6,6 +6,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 
 const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
   { value: 'light', label: 'Claro' },
+  { value: 'sepia', label: 'Sépia' },
   { value: 'dark', label: 'Escuro' },
   { value: 'system', label: 'Sistema' },
 ]
@@ -45,6 +46,9 @@ export function Settings() {
               onChange={s.setTheme}
             />
           </FieldRow>
+          <p className="text-xs text-text-muted">
+            "Sépia" imita papel — costuma ser mais confortável para sessões de leitura longas.
+          </p>
           <FieldRow label="Tamanho da fonte">
             <div className="flex gap-1">
               {FONT_OPTIONS.map((opt, i) => (

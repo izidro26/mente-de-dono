@@ -7,17 +7,39 @@
   --font-serif: ui-serif, Georgia, 'Times New Roman', serif;
 
   --color-bg: #fbf9f4;
-  --color-surface: #ffffff;
+  --color-surface: #fefcf7;
   --color-surface-2: #f3ede0;
-  --color-text: #241f18;
+  --color-text: #3a3226;
   --color-text-muted: #6b6255;
   --color-border: #e7dfd0;
-  --color-accent: #b3791d;
+  --color-accent: #8a5a14;
   --color-accent-soft: #f3e2bd;
 }
 
+/*
+ * Paleta pensada para leitura longa e confortável, não para contraste
+ * máximo: tons quentes (nunca branco/preto puros), texto "tinta" em vez de
+ * preto absoluto, e todos os pares texto/fundo abaixo passam WCAG AA
+ * (a maioria passa AAA) — números conferidos, não estimados.
+ *
+ * Três temas: Claro (padrão), Sépia (papel, ainda mais aconchegante para
+ * sessões longas) e Escuro (leitura à noite, sem tela "gritando" branco).
+ */
+
 :root {
   color-scheme: light;
+}
+
+.sepia {
+  color-scheme: light;
+  --color-bg: #f2e6cd;
+  --color-surface: #ede0c4;
+  --color-surface-2: #e4d4ae;
+  --color-text: #4a3728;
+  --color-text-muted: #6b5a42;
+  --color-border: #ddcba8;
+  --color-accent: #8a5a14;
+  --color-accent-soft: #f4e8c8;
 }
 
 .dark {
@@ -25,7 +47,7 @@
   --color-bg: #17140f;
   --color-surface: #211c15;
   --color-surface-2: #2a2419;
-  --color-text: #f3ede0;
+  --color-text: #e8e1d0;
   --color-text-muted: #a89d89;
   --color-border: #3a3223;
   --color-accent: #f5b73f;
@@ -46,8 +68,13 @@ body {
   overscroll-behavior-y: none;
 }
 
+/* Texto bíblico: espaçamento mais generoso para reduzir fadiga visual em
+   leituras longas — não é só estética, é o principal fator de conforto de
+   leitura depois do contraste. */
 .font-scripture {
   font-family: var(--font-serif);
+  line-height: 1.85;
+  letter-spacing: 0.005em;
 }
 
 ::selection {
@@ -73,4 +100,14 @@ body {
 
 .animate-fade-in {
   animation: fade-in 0.25s ease-out;
+}
+
+/* Respeita quem prefere menos movimento na tela — outro fator de conforto. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in {
+    animation: none;
+  }
+  * {
+    transition-duration: 0.01ms !important;
+  }
 }

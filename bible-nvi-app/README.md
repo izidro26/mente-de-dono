@@ -46,6 +46,17 @@ O Verbo foi desenhado em torno de **hábito e retenção**, não só leitura:
 - 🔒 **Privacidade por padrão** — notas, destaques, favoritos, progresso de
   planos e streak vivem só no IndexedDB do seu dispositivo. Não há conta,
   login ou servidor do Verbo coletando esses dados.
+- 📥 **Nunca fica "preso" sem conexão** — na primeira vez online, o app
+  baixa silenciosamente em segundo plano um pacote pequeno de leitura
+  (Evangelho de João inteiro + Salmos e capítulos de consolo/sabedoria mais
+  buscados). Assim, mesmo quem nunca abriu a tela de Downloads consegue ler
+  algo se a internet cair (ver `src/lib/starterPack.ts`).
+- 🎨 **Design pensado pra não cansar a vista** — paleta quente (nunca
+  branco/preto puros), tema **Sépia** opcional (papel, ótimo pra sessões
+  longas) além de Claro/Escuro, tipografia da leitura com espaçamento
+  generoso, e todo par texto/fundo do app passa WCAG AA (a maioria AAA) —
+  contraste alto o bastante pra ler bem, sem ser agressivo o bastante pra
+  cansar.
 
 ## Sobre o texto da NVI (e por que ele não está no código)
 

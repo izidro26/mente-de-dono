@@ -14,9 +14,11 @@ import { Settings } from './pages/Settings'
 import { Theology } from './pages/Theology'
 import { TheologyLocus } from './pages/TheologyLocus'
 import { useSettingsStore, applyThemeClass } from './store/useSettingsStore'
+import { ensureStarterPackDownloaded } from './lib/starterPack'
 
 function App() {
   const theme = useSettingsStore((s) => s.theme)
+  const version = useSettingsStore((s) => s.version)
 
   useEffect(() => {
     applyThemeClass(theme)
@@ -26,6 +28,15 @@ function App() {
     mq.addEventListener('change', listener)
     return () => mq.removeEventListener('change', listener)
   }, [theme])
+
+  useEffect(() => {
+    // Silencioso, em segundo plano: garante que sempre haja algo pra ler
+    // offline, mesmo que o usuário nunca abra a tela de Downloads.
+    ensureStarterPackDownloaded(version)
+    const onOnline = () => ensureStarterPackDownloaded(version)
+    window.addEventListener('online', onOnline)
+    return () => window.removeEventListener('online', onOnline)
+  }, [version])
 
   return (
     <BrowserRouter>

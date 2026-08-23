@@ -16,6 +16,7 @@ interface SettingsState {
   aiApiKey: string
   aiModel: string
   ttsRate: number
+  autoDownloadWholeBible: boolean
   setTheme: (t: ThemeMode) => void
   setFontSize: (f: FontSize) => void
   setVersion: (v: string) => void
@@ -26,6 +27,7 @@ interface SettingsState {
   setAiApiKey: (v: string) => void
   setAiModel: (v: string) => void
   setTtsRate: (v: number) => void
+  setAutoDownloadWholeBible: (v: boolean) => void
 }
 
 export const AVAILABLE_VERSIONS = [
@@ -48,6 +50,7 @@ export const useSettingsStore = create<SettingsState>()(
       aiApiKey: '',
       aiModel: DEFAULT_AI_MODEL,
       ttsRate: 1,
+      autoDownloadWholeBible: true,
       setTheme: (theme) => set({ theme }),
       setFontSize: (fontSize) => set({ fontSize }),
       setVersion: (version) => set({ version }),
@@ -58,6 +61,7 @@ export const useSettingsStore = create<SettingsState>()(
       setAiApiKey: (aiApiKey) => set({ aiApiKey }),
       setAiModel: (aiModel) => set({ aiModel }),
       setTtsRate: (ttsRate) => set({ ttsRate }),
+      setAutoDownloadWholeBible: (autoDownloadWholeBible) => set({ autoDownloadWholeBible }),
     }),
     { name: 'verbo-settings' },
   ),

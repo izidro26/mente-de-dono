@@ -1,23 +1,22 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BOOKS, type BibleBook } from '../data/books'
-import {
-  downloadBooks,
-  downloadTestament,
-  downloadWholeBible,
-  getCoverageMap,
-  type DownloadProgress,
-} from '../lib/offlineDownload'
+import { downloadBooks, downloadTestament, downloadWholeBible, getCoverageMap } from '../lib/offlineDownload'
 import { useSettingsStore } from '../store/useSettingsStore'
+import { useDownloadStore } from '../store/useDownloadStore'
 import { PageHeader } from '../components/ui/PageHeader'
 import { useOnlineStatus } from '../lib/useOnlineStatus'
 
 export function Downloads() {
   const version = useSettingsStore((s) => s.version)
+  const autoDownloadWholeBible = useSettingsStore((s) => s.autoDownloadWholeBible)
+  const setAutoDownloadWholeBible = useSettingsStore((s) => s.setAutoDownloadWholeBible)
   const online = useOnlineStatus()
   const [coverage, setCoverage] = useState<Map<string, number>>(new Map())
-  const [progress, setProgress] = useState<DownloadProgress | null>(null)
-  const [busy, setBusy] = useState(false)
-  const cancelRef = useRef(false)
+
+  const running = useDownloadStore((s) => s.running)
+  const source = useDownloadStore((s) => s.source)
+  const progress = useDownloadStore((s) => s.progress)
+  const downloadStore = useDownloadStore()
 
   async function refreshCoverage() {
     setCoverage(await getCoverageMap(version))
@@ -28,34 +27,44 @@ export function Downloads() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [version])
 
-  async function runDownload(task: () => Promise<{ failed: { error: string }[] }>) {
-    setBusy(true)
-    cancelRef.current = false
+  // Atualiza a lista de "por livro" em tempo real enquanto um download roda
+  // (seja ele automático ou disparado por um botão aqui).
+  useEffect(() => {
+    refreshCoverage()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [running, progress?.abbrev])
+
+  async function runManualDownload(task: () => Promise<{ failed: { error: string }[] }>) {
+    downloadStore.start('manual')
     try {
       await task()
     } finally {
-      setBusy(false)
-      setProgress(null)
+      downloadStore.finish()
       refreshCoverage()
     }
   }
 
   function downloadOne(book: BibleBook) {
-    return runDownload(() =>
-      downloadBooks(version, [book], setProgress, () => cancelRef.current),
+    return runManualDownload(() =>
+      downloadBooks(version, [book], (p) => downloadStore.update(p), () => downloadStore.cancelRequested),
     )
   }
 
   function downloadAll() {
-    return runDownload(() => downloadWholeBible(version, setProgress, () => cancelRef.current))
+    return runManualDownload(() =>
+      downloadWholeBible(version, (p) => downloadStore.update(p), () => downloadStore.cancelRequested),
+    )
   }
 
   function downloadTestamentGroup(t: 'AT' | 'NT') {
-    return runDownload(() => downloadTestament(version, t, setProgress, () => cancelRef.current))
+    return runManualDownload(() =>
+      downloadTestament(version, t, (p) => downloadStore.update(p), () => downloadStore.cancelRequested),
+    )
   }
 
   const totalCached = Array.from(coverage.values()).reduce((a, b) => a + b, 0)
   const totalChapters = BOOKS.reduce((a, b) => a + b.chapters, 0)
+  const allDownloaded = totalCached >= totalChapters
 
   return (
     <div className="animate-fade-in">
@@ -68,16 +77,23 @@ export function Downloads() {
           </p>
         )}
 
-        {busy && progress && (
+        {running && progress && (
           <div className="rounded-xl border border-border bg-surface p-4">
             <p className="text-sm font-medium">
               Baixando {progress.bookName} {progress.chapter}/{progress.totalChapters}…
             </p>
             <p className="text-xs text-text-muted">
               Livro {progress.booksDone + 1} de {progress.totalBooks}
+              {source === 'auto' && ' · automático, em segundo plano'}
             </p>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-2">
+              <div
+                className="h-full rounded-full bg-accent transition-all"
+                style={{ width: `${Math.round(((progress.booksDone + progress.chapter / progress.totalChapters) / progress.totalBooks) * 100)}%` }}
+              />
+            </div>
             <button
-              onClick={() => (cancelRef.current = true)}
+              onClick={() => downloadStore.requestCancel()}
               className="mt-3 w-full rounded-lg border border-border py-2 text-sm font-medium"
             >
               Cancelar
@@ -85,7 +101,13 @@ export function Downloads() {
           </div>
         )}
 
-        {!busy && (
+        {!running && allDownloaded && (
+          <p className="rounded-xl bg-accent-soft p-3 text-center text-sm font-medium text-accent">
+            ✓ Bíblia inteira baixada — disponível 100% offline
+          </p>
+        )}
+
+        {!running && !allDownloaded && (
           <div className="grid grid-cols-1 gap-2">
             <button
               onClick={downloadAll}
@@ -113,6 +135,21 @@ export function Downloads() {
           </div>
         )}
 
+        <label className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface p-3.5">
+          <span className="text-sm">
+            Baixar a Bíblia inteira automaticamente
+            <span className="block text-xs text-text-muted">
+              Em segundo plano, sempre que houver internet, até todos os livros ficarem offline
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            checked={autoDownloadWholeBible}
+            onChange={(e) => setAutoDownloadWholeBible(e.target.checked)}
+            className="h-5 w-5 shrink-0 accent-(--color-accent)"
+          />
+        </label>
+
         <div>
           <p className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-text-muted">Por livro</p>
           <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
@@ -132,7 +169,7 @@ export function Downloads() {
                   ) : (
                     <button
                       onClick={() => downloadOne(book)}
-                      disabled={!online || busy}
+                      disabled={!online || running}
                       className="rounded-full border border-border px-3 py-1.5 text-xs font-medium disabled:opacity-40"
                     >
                       Baixar

@@ -15,10 +15,12 @@ import { Theology } from './pages/Theology'
 import { TheologyLocus } from './pages/TheologyLocus'
 import { useSettingsStore, applyThemeClass } from './store/useSettingsStore'
 import { ensureStarterPackDownloaded } from './lib/starterPack'
+import { startBackgroundFullDownload } from './lib/backgroundSync'
 
 function App() {
   const theme = useSettingsStore((s) => s.theme)
   const version = useSettingsStore((s) => s.version)
+  const autoDownloadWholeBible = useSettingsStore((s) => s.autoDownloadWholeBible)
 
   useEffect(() => {
     applyThemeClass(theme)
@@ -30,13 +32,23 @@ function App() {
   }, [theme])
 
   useEffect(() => {
-    // Silencioso, em segundo plano: garante que sempre haja algo pra ler
-    // offline, mesmo que o usuário nunca abra a tela de Downloads.
-    ensureStarterPackDownloaded(version)
-    const onOnline = () => ensureStarterPackDownloaded(version)
+    // Silencioso, em segundo plano, sem pedir nada ao usuário:
+    // 1) um "pacote inicial" pequeno e rápido (João + Salmos favoritos),
+    //    pra nunca ficar sem nada pra ler nos primeiros segundos;
+    // 2) na sequência, a Bíblia inteira, capítulo por capítulo, até todos
+    //    os 66 livros estarem disponíveis offline. Resumível: se o app
+    //    fechar ou a conexão cair no meio, retoma de onde parou na
+    //    próxima vez (chapters já salvos são pulados).
+    async function sync() {
+      await ensureStarterPackDownloaded(version)
+      if (autoDownloadWholeBible) startBackgroundFullDownload(version)
+    }
+    sync()
+
+    const onOnline = () => sync()
     window.addEventListener('online', onOnline)
     return () => window.removeEventListener('online', onOnline)
-  }, [version])
+  }, [version, autoDownloadWholeBible])
 
   return (
     <BrowserRouter>

@@ -46,11 +46,16 @@ O Verbo foi desenhado em torno de **hábito e retenção**, não só leitura:
 - 🔒 **Privacidade por padrão** — notas, destaques, favoritos, progresso de
   planos e streak vivem só no IndexedDB do seu dispositivo. Não há conta,
   login ou servidor do Verbo coletando esses dados.
-- 📥 **Nunca fica "preso" sem conexão** — na primeira vez online, o app
-  baixa silenciosamente em segundo plano um pacote pequeno de leitura
-  (Evangelho de João inteiro + Salmos e capítulos de consolo/sabedoria mais
-  buscados). Assim, mesmo quem nunca abriu a tela de Downloads consegue ler
-  algo se a internet cair (ver `src/lib/starterPack.ts`).
+- 📥 **Nunca fica "preso" sem conexão** — o app baixa a **Bíblia inteira**
+  sozinho, em segundo plano, sem precisar abrir a tela de Downloads: nos
+  primeiros segundos já garante um pacote rápido (Evangelho de João +
+  Salmos/capítulos de consolo mais buscados — `src/lib/starterPack.ts`) e,
+  na sequência, todos os 66 livros, capítulo por capítulo
+  (`src/lib/backgroundSync.ts`). É resumível — fechar o app ou cair a
+  conexão no meio simplesmente continua de onde parou na próxima vez — e
+  pode ser desligado em **Downloads → "Baixar a Bíblia inteira
+  automaticamente"** por quem prefere controlar manualmente o consumo de
+  dados.
 - 🎨 **Design pensado pra não cansar a vista** — paleta quente (nunca
   branco/preto puros), tema **Sépia** opcional (papel, ótimo pra sessões
   longas) além de Claro/Escuro, tipografia da leitura com espaçamento

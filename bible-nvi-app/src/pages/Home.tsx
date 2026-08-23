@@ -8,6 +8,7 @@ import { useLastReadStore } from '../store/useLastReadStore'
 import { getBook } from '../data/books'
 import { Spinner } from '../components/ui/Spinner'
 import { AiSheet } from '../components/ai/AiSheet'
+import { useDownloadStore } from '../store/useDownloadStore'
 
 export function Home() {
   const version = useSettingsStore((s) => s.version)
@@ -28,6 +29,16 @@ export function Home() {
 
   const lastBook = getBook(lastRead.abbrev)
   const greeting = getGreeting()
+  const downloadSource = useDownloadStore((s) => s.source)
+  const downloadProgress = useDownloadStore((s) => s.progress)
+  const autoDownloadPct =
+    downloadSource === 'auto' && downloadProgress
+      ? Math.round(
+          ((downloadProgress.booksDone + downloadProgress.chapter / downloadProgress.totalChapters) /
+            downloadProgress.totalBooks) *
+            100,
+        )
+      : null
 
   async function handleShare() {
     if (!votd) return
@@ -64,6 +75,16 @@ export function Home() {
           </Link>
         </div>
       </div>
+
+      {autoDownloadPct != null && (
+        <Link
+          to="/downloads"
+          className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-xs text-text-muted"
+        >
+          <Spinner size={14} />
+          Baixando a Bíblia para uso offline… {autoDownloadPct}%
+        </Link>
+      )}
 
       <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
         <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-text-muted">

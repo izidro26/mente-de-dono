@@ -130,14 +130,33 @@ npm run android:debug     # gera android/app/build/outputs/apk/debug/app-debug.a
 
 > Por quê não geramos o APK aqui no sandbox de desenvolvimento? Ele não tem o
 > Android SDK instalado nem acesso de rede a `dl.google.com` (necessário para
-> baixá-lo), então o build acontece no GitHub Actions. O ícone do app usa o
-> placeholder padrão do Capacitor por enquanto — troque em
-> `android/app/src/main/res/mipmap-*` (ou pelo Android Studio's Image Asset
-> Studio) quando quiser um ícone customizado. Para publicar na Play Store,
-> seria necessário gerar um build `release` assinado com uma keystore própria
-> (`npm run android:release` + configuração de assinatura), o que não está
-> feito aqui de propósito — assinatura de release é uma decisão que só o
-> dono da conta de desenvolvedor deve tomar.
+> baixá-lo), então o build acontece no GitHub Actions.
+
+### Publicando um release assinado (Play Store ou distribuição direta)
+
+O `android/app/build.gradle` já está preparado para assinar o build `release`
+— só falta você entrar com a sua própria keystore (nunca geramos nem
+comitamos uma chave de assinatura por você, de propósito: é uma credencial
+que só o dono da conta de desenvolvedor deve controlar).
+
+1. Se ainda não tiver uma keystore, gere uma:
+   ```bash
+   keytool -genkeypair -v -keystore verbo-release.keystore \
+     -alias verbo -keyalg RSA -keysize 2048 -validity 10000
+   ```
+   Guarde o arquivo `.keystore` e as senhas em local seguro — perder isso
+   significa não conseguir mais atualizar o mesmo app já publicado.
+2. Copie `android/app/keystore.properties.example` para
+   `android/app/keystore.properties` (já no `.gitignore`) e preencha com o
+   caminho da keystore e as senhas.
+3. Rode `npm run android:release` — gera
+   `android/app/build/outputs/apk/release/app-release.apk`, já assinado.
+
+Em CI, em vez do arquivo, defina as variáveis de ambiente `KEYSTORE_PATH`,
+`KEYSTORE_PASSWORD`, `KEY_ALIAS` e `KEY_PASSWORD` (ex: GitHub Actions
+secrets) antes de rodar o Gradle — sem keystore configurada de nenhuma das
+duas formas, `assembleRelease` continua gerando um APK sem assinatura, sem
+quebrar nada.
 
 ## Estrutura do projeto
 

@@ -1,5 +1,28 @@
 apply plugin: 'com.android.application'
 
+// --- Assinatura de release (opcional) ---
+// Nada aqui é obrigatório: sem keystore configurada, `assembleRelease`
+// continua gerando um APK sem assinatura (mesmo comportamento de antes).
+// Para publicar de verdade (Play Store ou distribuição direta), configure
+// UMA das duas formas abaixo com a SUA PRÓPRIA keystore — nunca comitamos
+// nenhuma chave de assinatura neste repositório:
+//
+//   1) Local: copie android/keystore.properties.example para
+//      android/keystore.properties (já ignorado pelo git) e preencha com
+//      os dados da sua keystore.
+//   2) CI: defina as variáveis de ambiente KEYSTORE_PATH, KEYSTORE_PASSWORD,
+//      KEY_ALIAS e KEY_PASSWORD (ex: GitHub Actions secrets) antes de rodar
+//      o Gradle.
+def keystorePropertiesFile = rootProject.file('app/keystore.properties')
+def keystoreProperties = new Properties()
+def hasKeystoreProperties = keystorePropertiesFile.exists()
+if (hasKeystoreProperties) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+def envKeystorePath = System.getenv('KEYSTORE_PATH')
+def hasReleaseSigning = hasKeystoreProperties || envKeystorePath != null
+
 android {
     namespace = "com.verbo.biblia"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,10 +39,24 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    if (hasReleaseSigning) {
+        signingConfigs {
+            release {
+                storeFile file(hasKeystoreProperties ? keystoreProperties['storeFile'] : envKeystorePath)
+                storePassword hasKeystoreProperties ? keystoreProperties['storePassword'] : System.getenv('KEYSTORE_PASSWORD')
+                keyAlias hasKeystoreProperties ? keystoreProperties['keyAlias'] : System.getenv('KEY_ALIAS')
+                keyPassword hasKeystoreProperties ? keystoreProperties['keyPassword'] : System.getenv('KEY_PASSWORD')
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }

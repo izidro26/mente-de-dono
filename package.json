@@ -1,0 +1,15 @@
+{
+  "name": "@mentededono/indicators",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Indicadores TradingView Pine Script para Mente de Dono",
+  "type": "module",
+  "scripts": {
+    "build": "echo 'Pine Script - no build needed'",
+    "lint": "echo 'Pine Script - no lint configured'",
+    "test": "echo 'Pine Script - no tests configured'",
+    "sync": "echo 'Sync indicators to TradingView'"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

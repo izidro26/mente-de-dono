@@ -104,7 +104,8 @@ npm install
 npm run dev       # ambiente de desenvolvimento
 npm run build     # build de produção (gera o service worker também)
 npm run preview   # serve o build de produção localmente
-npm run lint       # oxlint
+npm run lint      # oxlint
+npm run test      # vitest (lógica pura: referências, SRS, planos de leitura)
 ```
 
 Requer Node 20+.

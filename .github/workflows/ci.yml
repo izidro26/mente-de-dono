@@ -1,0 +1,33 @@
+name: Verbo CI (lint, test, build)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'bible-nvi-app/**'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    paths:
+      - 'bible-nvi-app/**'
+      - '.github/workflows/ci.yml'
+
+defaults:
+  run:
+    working-directory: bible-nvi-app
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: bible-nvi-app/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test
+      - run: npm run build

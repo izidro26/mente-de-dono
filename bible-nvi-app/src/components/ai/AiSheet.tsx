@@ -23,7 +23,6 @@ export function AiSheet({ kind, reference, text, onClose }: AiSheetProps) {
 
   useEffect(() => {
     let cancelled = false
-    setStatus('loading')
     const fetcher = kind === 'explain' ? explainVerse : generateDevotional
     fetcher(aiApiKey, aiModel, reference, text)
       .then((res) => {

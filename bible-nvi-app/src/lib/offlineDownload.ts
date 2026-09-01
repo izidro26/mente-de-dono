@@ -16,15 +16,26 @@ export interface DownloadResult {
   failed: { abbrev: string; chapter: number; error: string }[]
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 /**
  * Baixa todos os capítulos de uma lista de livros para o IndexedDB,
  * permitindo leitura 100% offline depois. Pula capítulos já em cache.
+ *
+ * `politeDelayMs` (opcional) espaça as requisições de rede reais — não os
+ * capítulos pulados por já estarem em cache — para não sobrecarregar a API
+ * gratuita do provedor bíblico. Usado pelo download automático em segundo
+ * plano; downloads manuais (o usuário está olhando e esperando) continuam
+ * na velocidade máxima.
  */
 export async function downloadBooks(
   version: string,
   books: BibleBook[],
   onProgress?: (p: DownloadProgress) => void,
   shouldCancel?: () => boolean,
+  politeDelayMs = 0,
 ): Promise<DownloadResult> {
   const failed: DownloadResult['failed'] = []
   const totalBooks = books.length
@@ -53,6 +64,8 @@ export async function downloadBooks(
         const message = err instanceof BibleProviderError ? err.message : 'Falha desconhecida'
         failed.push({ abbrev: book.abbrev, chapter, error: message })
       }
+
+      if (politeDelayMs > 0) await sleep(politeDelayMs)
     }
   }
 
@@ -64,16 +77,18 @@ export async function downloadTestament(
   testament: 'AT' | 'NT',
   onProgress?: (p: DownloadProgress) => void,
   shouldCancel?: () => boolean,
+  politeDelayMs = 0,
 ): Promise<DownloadResult> {
-  return downloadBooks(version, BOOKS.filter((b) => b.testament === testament), onProgress, shouldCancel)
+  return downloadBooks(version, BOOKS.filter((b) => b.testament === testament), onProgress, shouldCancel, politeDelayMs)
 }
 
 export async function downloadWholeBible(
   version: string,
   onProgress?: (p: DownloadProgress) => void,
   shouldCancel?: () => boolean,
+  politeDelayMs = 0,
 ): Promise<DownloadResult> {
-  return downloadBooks(version, BOOKS, onProgress, shouldCancel)
+  return downloadBooks(version, BOOKS, onProgress, shouldCancel, politeDelayMs)
 }
 
 export interface OfflineCoverage {

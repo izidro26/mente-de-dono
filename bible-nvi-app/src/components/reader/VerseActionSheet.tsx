@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { db, type HighlightColor } from '../../lib/db'
+import { db, now, type HighlightColor } from '../../lib/db'
 import { createInitialSrsState } from '../../lib/srs'
 import { shareVerseImage } from '../../lib/share'
 import { HIGHLIGHT_COLORS } from './HighlightColorDot'
@@ -41,7 +41,7 @@ export function VerseActionSheet({
     } else if (existing) {
       await db.highlights.update(existing.id!, { color })
     } else {
-      await db.highlights.add({ version, abbrev, chapter, verse, color, createdAt: Date.now() })
+      await db.highlights.add({ version, abbrev, chapter, verse, color, createdAt: now() })
     }
     onClose()
   }
@@ -54,14 +54,14 @@ export function VerseActionSheet({
       chapter,
       verse,
       text: noteText.trim(),
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+      createdAt: now(),
+      updatedAt: now(),
     })
     onClose()
   }
 
   async function addBookmark() {
-    await db.bookmarks.add({ abbrev, chapter, verse, createdAt: Date.now() })
+    await db.bookmarks.add({ abbrev, chapter, verse, createdAt: now() })
     setFeedback('Salvo nos favoritos.')
     setTimeout(onClose, 500)
   }
@@ -76,7 +76,7 @@ export function VerseActionSheet({
       text,
       reference,
       ...createInitialSrsState(),
-      createdAt: Date.now(),
+      createdAt: now(),
     })
     setFeedback('Adicionado à memorização.')
     setTimeout(onClose, 500)

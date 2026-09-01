@@ -2,7 +2,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { dayId, getPlan } from '../data/plans'
 import { formatDayRefs } from '../lib/planFormat'
-import { db } from '../lib/db'
+import { db, now } from '../lib/db'
 import { PageHeader } from '../components/ui/PageHeader'
 import { EmptyState } from '../components/ui/EmptyState'
 
@@ -29,8 +29,8 @@ export function PlanDetail() {
     await db.planProgress.put({
       planId: plan!.id,
       completedDayIds: Array.from(set),
-      startedAt: existing?.startedAt ?? Date.now(),
-      lastReadAt: Date.now(),
+      startedAt: existing?.startedAt ?? now(),
+      lastReadAt: now(),
     })
   }
 

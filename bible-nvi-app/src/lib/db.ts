@@ -1,5 +1,10 @@
 import Dexie, { type EntityTable } from 'dexie'
 
+/** Timestamp atual em ms — só um wrapper nomeado sobre Date.now() para uso em handlers de evento. */
+export function now(): number {
+  return Date.now()
+}
+
 export interface CachedVerse {
   number: number
   text: string

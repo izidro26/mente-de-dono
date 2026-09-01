@@ -10,7 +10,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'icons/icon.svg'],
+      includeAssets: ['favicon.svg', 'favicon-32.png', 'icons/icon.svg', 'icons/apple-touch-icon.png'],
       manifest: {
         name: 'Verbo — Bíblia NVI Inteligente',
         short_name: 'Verbo',
@@ -24,12 +24,13 @@ export default defineConfig({
         scope: '/',
         lang: 'pt-BR',
         icons: [
-          { src: '/icons/icon.svg', sizes: '192x192', type: 'image/svg+xml' },
-          { src: '/icons/icon.svg', sizes: '512x512', type: 'image/svg+xml' },
+          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/icons/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
           {
-            src: '/icons/icon.svg',
+            src: '/icons/icon-512-maskable.png',
             sizes: '512x512',
-            type: 'image/svg+xml',
+            type: 'image/png',
             purpose: 'maskable',
           },
         ],

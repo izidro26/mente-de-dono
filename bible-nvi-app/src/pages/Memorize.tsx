@@ -18,9 +18,13 @@ export function Memorize() {
   const [revealed, setRevealed] = useState(false)
 
   useEffect(() => {
+    // Sincronizando com um sistema externo (Dexie/IndexedDB via useLiveQuery):
+    // congela a fila de revisão na primeira carga, para não reordenar/encolher
+    // enquanto o usuário está no meio de uma sessão de revisão.
     if (!allCards) return
-    const now = Date.now()
-    setQueue((prev) => prev ?? allCards.filter((c) => c.dueAt <= now))
+    const dueNow = Date.now()
+    // oxlint-disable-next-line react/set-state-in-effect
+    setQueue((prev) => prev ?? allCards.filter((c) => c.dueAt <= dueNow))
   }, [allCards])
 
   if (allCards === undefined || queue === null) return null

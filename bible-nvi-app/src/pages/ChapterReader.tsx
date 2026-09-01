@@ -32,6 +32,9 @@ export function ChapterReader() {
   const book = getBook(abbrev)
 
   useEffect(() => {
+    // Sincronizando com um sistema externo (o provedor bíblico) ao trocar de
+    // capítulo: limpar o estado antigo antes de buscar o novo é intencional.
+    // oxlint-disable-next-line react/set-state-in-effect
     setVerses(null)
     setError(null)
     stopSpeech()

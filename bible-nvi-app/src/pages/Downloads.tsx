@@ -3,6 +3,7 @@ import { BOOKS, type BibleBook } from '../data/books'
 import { downloadBooks, downloadTestament, downloadWholeBible, getCoverageMap } from '../lib/offlineDownload'
 import { useSettingsStore } from '../store/useSettingsStore'
 import { useDownloadStore } from '../store/useDownloadStore'
+import { isOnLimitedConnection } from '../lib/backgroundSync'
 import { PageHeader } from '../components/ui/PageHeader'
 import { useOnlineStatus } from '../lib/useOnlineStatus'
 
@@ -99,6 +100,13 @@ export function Downloads() {
               Cancelar
             </button>
           </div>
+        )}
+
+        {!running && online && autoDownloadWholeBible && !allDownloaded && isOnLimitedConnection() && (
+          <p className="rounded-xl border border-dashed border-border p-3 text-xs text-text-muted">
+            O download automático está pausado porque seu dispositivo sinaliza uma conexão limitada
+            (economia de dados ou 2G). Baixe manualmente abaixo se quiser mesmo assim.
+          </p>
         )}
 
         {!running && allDownloaded && (
